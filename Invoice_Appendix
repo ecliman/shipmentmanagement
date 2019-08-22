@@ -1,0 +1,76 @@
+//INVOICE APPENDIX
+var iv = {
+  //Basic Info
+  date: -1,
+  user: -1,
+  confirmed: -1,
+  orderNumber: "K2",
+  billTo: "F12",
+  bookedBy: "J12",
+  revenue: "J15",
+  currency: -1,
+  customerTracking: -1,
+  //Carrier Info
+  carrier: {
+    name: -1,
+    contact: -1,
+    tel: -1,
+    afterhours: -1,
+    email: -1,
+    rate: -1,
+    quote: -1
+  },
+  //Shipment Details
+  details: {
+    pcs: "F22",
+    type: "H22",
+    weight: "K22",
+    footage: "K23",
+    dims: "F23",
+    commodity: "F24"
+  },
+  //Shipper + Pickup Info
+  shipper: {
+    date: "F27",
+    time: -1,
+    appt: -1,
+    apptNum: -1,
+    open: -1,
+    close: -1,
+    name: "F28",
+    address: -1,
+    city: "F29",
+    state: "H29",
+    zip: -1,
+    contact: -1,
+    tel: -1,
+    email: -1,
+    notes: -1
+  },
+  //Consignee + Delivery Info
+  consig: {
+    date: "F33",
+    appt: -1,
+    apptNum: -1,
+    open: -1,
+    close: -1,
+    name: "F33",
+    address: -1,
+    city: "F34",
+    state: "H34", 
+    zip: -1,
+    contact: -1,
+    tel: -1,
+    email: -1,
+    notes: -1
+  },
+  //Customs Broker Info
+  customs: {
+    broker: -1,
+    account: -1,
+    contact: -1,
+    tel: -1,
+    email: -1,
+    importer: -1
+  }
+};
