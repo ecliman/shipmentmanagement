@@ -1,0 +1,76 @@
+//BILL OF LADING APPENDIX
+var bol = {
+  //Basic Info
+  date: "C5",
+  user: -1,
+  confirmed: -1,
+  orderNumber: "S4",
+  billTo: -1,
+  bookedBy: -1,
+  revenue: -1,
+  currency: -1,
+  customerTracking: -1,
+  //Carrier Info
+  carrier: {
+    name: "I24",
+    contact: -1,
+    tel: -1,
+    afterhours: -1,
+    email: -1,
+    rate: -1,
+    quote: -1
+  },
+  //Shipment Details
+  details: {
+    pcs: "A21",
+    type: -1,
+    weight: "R21",
+    footage: -1,
+    dims: "U21",
+    commodity: -1
+  },
+  //Shipper + Pickup Info
+  shipper: {
+    date: -1,
+    time: -1,
+    appt: -1,
+    apptNum: -1,
+    open: "D12",
+    close: "H12",
+    name: "D7",
+    address: "D8",
+    city: "D9",
+    state: "I9",
+    zip: "K9",
+    contact: "E11",
+    tel: "D10",
+    email: -1,
+    notes: -1
+  },
+  //Consignee + Delivery Info
+  consig: {
+    date: -1,
+    appt: -1,
+    apptNum: -1,
+    open: "P15",
+    close: "U15",
+    name: "D14",
+    address: "D15",
+    city: "D16",
+    state: "O16", 
+    zip: "T16",
+    contact: "E17",
+    tel: "P14",
+    email: "Q17",
+    notes: -1
+  },
+  //Customs Broker Info
+  customs: {
+    broker: "J30",
+    account: "J31",
+    contact: "G32",
+    tel: "K32",
+    email: "O32",
+    importer: "J29"
+  }
+};
