@@ -14,4 +14,5 @@
 #Current Version ACCOUNTING FEATURES#
 #Auto-generating invoices, current bills that need to be invoiced 
 #outstanding receivables, outstanding payables, all client / supplier specific 
-#tax and fuel breakdown option 
+#tax and fuel breakdown option
+#automatically updated monthly/weekly cashflow statement
