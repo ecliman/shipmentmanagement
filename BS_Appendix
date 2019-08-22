@@ -1,0 +1,82 @@
+//BILLING SHEET APPENDIX
+function bs(row) {
+  var bs = {
+  //Basic Info
+    date: -1,
+    user: -1,
+    confirmed: -1,
+    orderNumber: "B"+row,
+    billTo: "D"+row,
+    bookedBy: "E"+row,
+    revenue: "C"+row,
+    currency: -1,
+    customerTracking: -1,
+    fuelBreakdown: "G"+row,
+    taxes: "F"+row,
+    //Carrier Info
+    carrier: {
+      name: -1,
+      contact: -1,
+      tel: -1,
+      afterhours: -1,
+      email: -1,
+      rate: -1,
+      quote: -1
+    },
+    //Shipment Details
+    details: {
+      pcs: -1,
+      type: -1,
+      weight: -1,
+      footage: -1,
+      dims: -1,
+      commodity: -1
+    },
+    //Shipper + Pickup Info
+    shipper: {
+      date: -1,
+      time: -1,
+      appt: -1,
+      apptNum: -1,
+      open: -1,
+      close: -1,
+      name: -1,
+      address: -1,
+      city: -1,
+      state: -1,
+      zip: -1,
+      contact: -1,
+      tel: -1,
+      email: -1,
+      notes: -1
+    },
+    //Consignee + Delivery Info
+    consig: {
+      date: "H"+row,
+      appt: -1,
+      apptNum: -1,
+      open: -1,
+      close: -1,
+      name: -1,
+      address: -1,
+      city: -1,
+      state: -1, 
+      zip: -1,
+      contact: -1,
+      tel: -1,
+      email: -1,
+      notes: -1
+    },
+    //Customs Broker Info
+    customs: {
+      broker: -1,
+      account: -1,
+      contact: -1,
+      tel: -1,
+      email: -1,
+      importer: -1
+    }
+  };
+  
+  return bs;
+}
