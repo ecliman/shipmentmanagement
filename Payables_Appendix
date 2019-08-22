@@ -1,0 +1,76 @@
+//MASTER ORDER FORM APPENDIX
+var m = {
+  //Basic Info
+  date: "B",
+  user: "C",
+  confirmed: "D",
+  orderNumber: "E",
+  billTo: "F",
+  bookedBy: "G",
+  revenue: "H",
+  currency: "I",
+  customerTracking: "J",
+  //Carrier Info
+  carrier: {
+    name: "K",
+    contact: "L",
+    tel: "M",
+    afterhours: "N",
+    email: "O",
+    rate: "P",
+    quote: "Q"
+  },
+  //Shipment Details
+  details: {
+    pcs: "R",
+    type: "S",
+    weight: "T",
+    footage: "U",
+    dims: "V",
+    commodity: "W"
+  },
+  //Shipper + Pickup Info
+  shipper: {
+    date: "X",
+    time: "Y",
+    appt: "Z",
+    apptNum: "AA",
+    open: "AB",
+    close: "AC",
+    name: "AD",
+    address: "AE",
+    city: "AF",
+    state: "AG",
+    zip: "AH",
+    contact: "AI",
+    tel: "AJ",
+    email: "AK",
+    notes: "AL"
+  },
+  //Consignee + Delivery Info
+  consig: {
+    date: "AM",
+    appt: "AN",
+    apptNum: "AO",
+    open: "AP",
+    close: "AQ",
+    name: "AR",
+    address: "AS",
+    city: "AT",
+    state: "AU", 
+    zip: "AV",
+    contact: "AW",
+    tel: "AX",
+    email: "AY",
+    notes: "AZ"
+  },
+  //Customs Broker Info
+  customs: {
+    broker: "BA",
+    account: "BB",
+    contact: "BC",
+    tel: "BD",
+    email: "BE",
+    importer: "BF"
+  }
+};
