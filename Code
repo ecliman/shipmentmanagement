@@ -1,0 +1,354 @@
+//====================================================================
+//GLOBAL VARIABLES: Make sure all appendices are up to date
+//====================================================================
+
+var spreadsheet;
+var sheets = {};
+
+var sheetIndices = {
+  master: 0,
+  confirmation: 1,
+  bill: 2,
+  invoice: 3,
+  tracking: 4,
+  billing: 5,
+  payables: 6,
+  ap: 7,
+  ar: 8
+};
+
+//====================================================================
+//GENERAL FUNCTIONS
+//====================================================================
+
+//Initialize global variables upon the press of any button
+function init(){
+  //Get the current spreadsheet
+  spreadsheet = SpreadsheetApp.getActive();
+  //Get all sheets in the spreadsheet
+  var allSheets = spreadsheet.getSheets();
+  //Represent each sheet as an attribute in sheets JSON
+  sheets.master = allSheets[sheetIndices.master];
+  sheets.confirmation = allSheets[sheetIndices.confirmation];
+  sheets.bill = allSheets[sheetIndices.bill];
+  sheets.invoice = allSheets[sheetIndices.invoice];
+  sheets.tracking = allSheets[sheetIndices.tracking];
+  sheets.billing = allSheets[sheetIndices.billing];
+  sheets.payables = allSheets[sheetIndices.payables]
+  sheets.ap = allSheets[sheetIndices.ap];
+  sheets.ar = allSheets[sheetIndices.ar];  
+  
+}
+
+/*Get all the data associated to an ORD# from the master sheet
+  Returns a JSON with all entries of the order number as attributes
+  or returns NULL if not found.*/
+function getFromMaster(orderNumber){
+  var row; //The row which the order number is found 
+  var orderNumbers = sheets.master.getRange( m.orderNumber+":"+m.orderNumber).getValues();
+  
+  //Iterate through column until the row with the right order # is found
+  //Set the row
+  row = getMatchingRow(orderNumbers, orderNumber);
+  
+  //Begin Building JSON
+  var masterEntry = JSON.parse(JSON.stringify(m)); //Copy structure of m column appendix
+ 
+  //For every key (attribute) masterEntry, reference to the m appendix, and grab the corresponding data
+  for(var key in masterEntry){
+    if(masterEntry.hasOwnProperty(key) && m.hasOwnProperty(key) ){
+      if(numKeys(masterEntry[key]) == 0){ //The key does not lead to another JSON, set the attribute
+        var column = m[key]; //Column letter that the attribute can be found in
+        var cell = column+row; //The cell in which the attribute can be found in
+        masterEntry[key] = sheets.master.getRange(cell).getDisplayValue();
+      }else{ //Key leads to another JSON set the keys inside those
+        for(var key2 in m[key]){
+          if(masterEntry[key].hasOwnProperty(key2) && m[key].hasOwnProperty(key2)){
+            var column = m[key][key2];
+            var cell = column+row; 
+            masterEntry[key][key2] = sheets.master.getRange(cell).getDisplayValue();
+          }
+        }
+      }
+    }
+  }
+  
+  //JSON built, return
+  return masterEntry;
+}
+
+
+//====================================================================
+//SHEET FILLING
+//====================================================================
+
+function fillSheet(data, targetSheet, appendix){
+  //For each key in entryData, cross reference to cc appendix, and set the value of that cell to the attribute value of entryData
+  for(var key in data){
+    if(data.hasOwnProperty(key) && appendix.hasOwnProperty(key)){
+      if(numKeys(data[key]) == 0){
+        if(appendix[key] == -1) {continue;}
+        targetSheet.getRange(appendix[key]).setValue(data[key]); 
+      }else{
+        for(var key2 in data[key]){
+          if(appendix[key][key2] == -1) {continue;}
+          targetSheet.getRange(appendix[key][key2]).setValue(data[key][key2]);
+             sheets.invoice.getRange("J17").setValue("=J15*.05"); //HARDCODE
+          sheets.invoice.getRange("J18").setValue("=J15*.09975"); //HARDCODE
+        }
+      }
+    }
+  }
+}
+
+//On the tracking page, move all entries from tracking sheet to billing sheet
+function fillBillingAndPayables(){
+  
+  //Column where you can find checked rows
+  var checked = getCheckedRows(sheets.tracking, "Q");
+  
+  //For every checked row from tracking, get its data, and fill the first Empty row in billing and payables
+  for(var i = 0; i < checked.length; i++){
+    
+    var entryOrderNumber = sheets.tracking.getRange( ts(checked[i]).orderNumber ).getValue();
+    var data = getFromMaster(entryOrderNumber);
+
+    //If customer row isn't blank, then fill billing
+    Logger.log(sheets.tracking.getRange(ts(checked[i]).billTo).getValue());
+    if(sheets.tracking.getRange(ts(checked[i]).billTo).getValue() != ""){
+      var billingFirstEmpty = findFirstEmpty(sheets.billing, bs(2).orderNumber);
+      var billingAppendix = bs(billingFirstEmpty)
+      fillSheet(data, sheets.billing, billingAppendix);
+      //Add 30 days to the consig.date 
+      var plus30 = "";
+      if(data.consig.date != ""){
+        plus30 = '=DATEVALUE("'+data.consig.date+'")+30';
+      }
+      sheets.billing.getRange(billingAppendix.consig.date).setValue(plus30);
+    }
+    
+    //If carrier row isn't blank, then fill payables
+    Logger.log(sheets.tracking.getRange(ts(checked[i]).carrier.name).getValue());
+    if(sheets.tracking.getRange(ts(checked[i]).carrier.name).getValue() != ""){
+      var payablesFirstEmpty = findFirstEmpty(sheets.payables, pb(2).orderNumber);
+      var payablesAppendix = pb(payablesFirstEmpty);
+      fillSheet(data, sheets.payables, payablesAppendix);
+      //Add 30 days to the consig date
+      var plus25 = "";
+      if(data.consig.date != ""){
+        plus25 = '=DATEVALUE("'+data.consig.date+'")+25';
+      }
+      
+      sheets.payables.getRange(payablesAppendix.consig.date).setValue(plus25);
+    }
+  }
+
+  //Delete checked rows
+  for(var i = checked.length-1; i >= 0; i--){
+    sheets.tracking.deleteRow(checked[i]);
+  } 
+}
+
+//Take every checked row in billing sheet and move it to the AR sheet
+function fillAR(){
+  //Get checked rows
+  var checked = getCheckedRows(sheets.billing, "I");
+
+  //For every checked row in billing, get it's data and fill the next empty row in AR sheet
+  for(var i = 0; i < checked.length; i++){
+    var entryOrderNumber = sheets.billing.getRange( bs(checked[i]).orderNumber ).getValue();
+    var data = getFromMaster(entryOrderNumber);
+    //Source revenue and delivery date from billing instead of master
+    data.revenue = sheets.billing.getRange(bs(checked[i]).revenue).getValue();
+    data.consig.date = sheets.billing.getRange(bs(checked[i]).consig.date).getValue();
+    
+    var arFirstEmpty = findFirstEmpty(sheets.ar, ar(2).orderNumber);
+    var arAppendix = ar(arFirstEmpty); 
+    
+    fillSheet(data, sheets.ar, arAppendix);
+  }
+  
+  //Delete checked rows
+  for(var i = checked.length-1; i >= 0; i--){
+    sheets.billing.deleteRow(checked[i]);
+  }
+}
+
+//Take every checked row in payables sheet and move it to AP sheet
+function fillAP(){
+  //Get checked rows
+  var checked = getCheckedRows(sheets.payables, "G");
+  
+  //For every checked row in payables, get it's data and fill the next empty row in AP sheet
+  for(var i = 0; i < checked.length; i ++){
+    
+    var entryOrderNumber = sheets.payables.getRange( pb(checked[i]).orderNumber ).getValue();
+    var data = getFromMaster(entryOrderNumber);
+    //Source carrier rate and delivery date (+25) from payable instead of master
+    data.carrier.rate = sheets.payables.getRange(pb(checked[i]).carrier.rate).getValue();
+    var dueDate = sheets.payables.getRange(pb(checked[i]).consig.date).getValue();
+    var apFirstEmpty = findFirstEmpty(sheets.ap, ap(2).orderNumber);
+    var apAppendix = ap(apFirstEmpty);
+    
+    fillSheet(data, sheets.ap, apAppendix);
+    //Also add due date at G+row
+    sheets.ap.getRange("G"+apFirstEmpty).setValue(dueDate);
+    //Also add mode of payment from F to E
+    var paymentMode = sheets.payables.getRange("F"+checked[i]).getValue();
+    sheets.ap.getRange("E"+apFirstEmpty).setValue(paymentMode);
+  }
+  
+  //Delete checked rows
+  for(var i = checked.length-1; i >= 0; i --){
+    sheets.payables.deleteRow(checked[i]);
+  }
+}
+
+
+
+//====================================================================
+//BUTTON MAIN METHODS
+//====================================================================
+
+//Takes user input from A2, and fills the CarrierConfirmation, Bill of Lading and Invoice Sheets
+function masterButton (){
+   init();
+  //Read from user input in A2
+  var execRow = readCell(sheets.master, "A2");
+  //Find the order number in the inputted row
+  var orderNumber = readCell(sheets.master, m.orderNumber+execRow);
+  //Execute and store data
+  var entryData = getFromMaster(orderNumber);
+  
+  //Fill CarrierConfirmation sheet
+  fillSheet(entryData, sheets.confirmation, cc);
+  
+  //Fill Bill of Lading sheet
+  fillSheet(entryData, sheets.bill, bol);
+  
+  //Fill Invoice Sheet
+  fillSheet(entryData, sheets.invoice, iv);
+  //Check for Purolator Defaults on Invocie
+  if(entryData.billTo == "PUROLATOR INC." || entryData.billTo == "PUROLATOR INC" || entryData.billTo == "Purolator Inc." || entryData.billTo == "PUROLATOR INC"){
+    sheets.invoice.getRange("F13").setValue("1710 Trans-Canada HWY");
+    sheets.invoice.getRange("F14").setValue("Saint Laurent");
+    sheets.invoice.getRange("F15").setValue("QC");
+    sheets.invoice.getRange("F16").setValue("H9P 1H7");
+  }else{
+    sheets.invoice.getRange("F13").setValue("");
+    sheets.invoice.getRange("F14").setValue("");
+    sheets.invoice.getRange("F15").setValue("");
+    sheets.invoice.getRange("F16").setValue("");
+  }
+  //Clear taxes section
+  sheets.invoice.getRange("J17").setValue("0");
+  sheets.invoice.getRange("J18").setValue("0");
+  sheets.invoice.getRange("J16").setValue("0");
+  
+  //Generate the Tracking appendix
+  var trackingFirstEmpty = findFirstEmpty(sheets.tracking, "A2");
+  var t = ts(trackingFirstEmpty);
+  //Fill Tracking Sheet
+  fillSheet(entryData, sheets.tracking, t);
+  //Fix date formulas
+  var pickupDate = 'IF(DATEVALUE("'+entryData.shipper.date+ '") = TODAY(), "TODAY", DATEVALUE(" '+entryData.shipper.date+'"))';
+  var deliveryDate = 'IF(DATEVALUE("'+entryData.consig.date+ '") = TODAY(), "TODAY", DATEVALUE(" '+entryData.consig.date+'"))';
+  sheets.tracking.getRange(t.shipper.date).setFormula(pickupDate);
+  sheets.tracking.getRange(t.consig.date).setFormula(deliveryDate);
+  
+}
+//Same as masterButton function, but does not update the tracking sheet
+function mbNoTracking(){
+  init();
+  //Read from user input in A2
+  var execRow = readCell(sheets.master, "A2");
+  //Find the order number in the inputted row
+  var orderNumber = readCell(sheets.master, m.orderNumber+execRow);
+  //Execute and store data
+  var entryData = getFromMaster(orderNumber);
+  
+  //Fill CarrierConfirmation sheet
+  fillSheet(entryData, sheets.confirmation, cc);
+  
+  //Fill Bill of Lading sheet
+  fillSheet(entryData, sheets.bill, bol);
+  
+  //Fill Invoice Sheet
+  fillSheet(entryData, sheets.invoice, iv);
+  //Check for Purolator Defaults on Invocie
+  if(entryData.billTo == "PUROLATOR" || entryData.billTo == "Purolator Inc" || entryData.billTo == "Purolator Inc."){
+    sheets.invoice.getRange("F13").setValue("1710 Trans-Canada HWY");
+    sheets.invoice.getRange("F14").setValue("Saint Laurent");
+    sheets.invoice.getRange("F15").setValue("QC");
+    sheets.invoice.getRange("F16").setValue("H9P 1H7");
+  }else{
+    sheets.invoice.getRange("F13").setValue("");
+    sheets.invoice.getRange("F14").setValue("");
+    sheets.invoice.getRange("F15").setValue("");
+    sheets.invoice.getRange("F16").setValue("");
+  }
+  //Clear taxes section
+  sheets.invoice.getRange("J17").setValue("0");
+  sheets.invoice.getRange("J18").setValue("0");
+  sheets.invoice.getRange("J16").setValue("0");
+
+}
+
+//Executed when Send to Billing on the tracking sheet. Moves all checked rows to billing and payables sheet.
+function trackingButton(){
+  init();
+  fillBillingAndPayables(); 
+}
+
+//Generate an invoice from a row on the billing sheet
+function billingInvoice(){
+  init();
+  var refRow = readCell(sheets.billing, "J2");
+  var orderNumber = readCell(sheets.billing, bs(refRow).orderNumber);
+  var data = getFromMaster(orderNumber);
+  //Update revenue and cost
+  data.revenue = sheets.billing.getRange(bs(refRow).revenue).getValue();
+  //Fill invoice sheet
+  fillSheet(data, sheets.invoice, iv);
+  //check if taxes is checked
+  var taxes = readCell(sheets.billing, bs(refRow).taxes);
+  if(taxes == true){
+    sheets.invoice.getRange("J17").setValue("=J15*.05"); //HARDCODE
+    sheets.invoice.getRange("J18").setValue("=J15*.09975"); //HARDCODE
+  }
+  
+  //Check for Purolator Defaults on Invocie
+  if(data.billTo == "PUROLATOR INC" || data.billTo == "Purolator Inc" || data.billTo == "Purolator Inc." || data.billTo == "PUROLATOR INC"){
+    sheets.invoice.getRange("F13").setValue("1710 Trans-Canada HWY");
+    sheets.invoice.getRange("F14").setValue("Saint Laurent");
+    sheets.invoice.getRange("F15").setValue("QC");
+    sheets.invoice.getRange("F16").setValue("H9P 1H7");
+  }else{
+    sheets.invoice.getRange("F13").setValue("");
+    sheets.invoice.getRange("F14").setValue("");
+    sheets.invoice.getRange("F15").setValue("");
+    sheets.invoice.getRange("F16").setValue("");
+  }
+  
+  //Check for fuel breakdown
+  var fuel = sheets.billing.getRange(bs(refRow).fuelBreakdown).getValue();
+  if(fuel != ""){
+    sheets.invoice.getRange("J16").setValue("=J15*"+fuel);
+  }
+  
+}
+
+//Button on billing page that when pressed, takes the checked rows in the billing sheet and moves them to AR sheet
+function billingButton(){
+  init();
+  fillAR();
+}
+
+
+//Button on payables page that when pressed, takes the checked rows in payables and move them to the AP sheet. 
+function payablesButton(){
+  init();
+  fillAP();
+}
+
+
