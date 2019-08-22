@@ -1,0 +1,87 @@
+//====================================================================
+//HELPERS
+//====================================================================
+
+//!!!HELPERRead value in a cell
+function readCell(sheet, range){
+  return sheet.getRange(range).getValue();
+}
+//!!!HELPERTurn a column letter and row number into a range
+function r(column, row){
+  return column+row
+}
+//!!!HELPER: Search an array of values for the first index that matches the key
+function getMatchingRow(values, key){
+  for(var i = 0; i < values.length; i++){
+    if(values[i] == key){
+      return i+1;
+    }
+  }
+  //Key not found
+  throw "Key not found in getMatchingRow "+key;
+}
+//!!!HELPER: Return the number of keys in a JSON
+function numKeys(obj){
+  var count = 0;
+  for(var key in obj){
+    if(obj.hasOwnProperty(key)){
+      count++;
+    }
+  }
+  return count;
+}
+
+//!!!HELPER: Find the first empty row number under given a cell. Returns int rowNum
+function findFirstEmpty(sheet, cell){
+  var column = cell.match(/[a-zA-Z]+/g); //Get column of the inputted cell
+  var row = cell.replace(/\D/g,''); //Get just the row number of the inputted
+  var i = row;
+  while(true){
+    if(sheet.getRange(column+i).getValue() == ""){
+      return i;
+    }else{
+      i++;
+    }
+  }
+}
+
+//!!!HELPER: Select a cell, remove all empty rows in between that cell and the last cell with data in the range below it
+function deleteEmptyRows(sheet, cell){
+  var column = cell.match(/[a-zA-Z]+/g); //Get column
+  var row = cell.replace(/\D/g,''); //Get row
+  var rangeUnder = cell+":"+column + sheet.getLastRow(); //The range under the cell
+  //Start at the bottom, delete empty 
+  for(var i = getLastDataRow(sheet, rangeUnder); i >= row; i--){
+    if(sheet.getRange(column+i).getValue() == ""){
+      sheet.deleteRow(i);
+    }
+  }
+}
+
+//!!!HELPER: Find last row with text in the range
+function getLastDataRow(sheet, range) {
+  var lastRow = sheet.getRange(range).getLastRow();
+  var values = sheet.getRange(range).getValues(); //Get values in the range
+  //Start at bottom of values, the first entry with data is the last row
+  var counter = 0;
+  for(var i = values.length-1; i > 0; i --){
+    if(values[i] != ""){
+      return lastRow - counter
+    }
+    counter ++;
+  }
+  
+}
+
+//!!!HELPER: Get the row numbers for every checked row in a column
+function getCheckedRows(sheet, column) {
+  var checked = []; //Store all checked rows
+  var allValues = sheet.getRange(column+":"+column).getValues(); //Get value in all rows
+  //Iterate through all values, push row number (i+1) of all checked rows
+  for(var i = 0; i < allValues.length; i++){
+    if(allValues[i] == "true"){
+      checked.push(i+1);
+    }
+  }
+  return checked;
+}
