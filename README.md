@@ -1,5 +1,8 @@
 # shipmentmanager
 
+Used for a small 3PL shipping logistics operation to make our day to day tasks more manageable
+
+
 ################################################################################################################
 #haven't updated the following features to github - new employee handling with tags, more encapsulation of roles
 #I.E, script is no longer run through one sheet - there is a master, an admin and an employee sheet
